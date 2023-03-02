@@ -1,5 +1,6 @@
 #include "tb6612.h"
 
+// Set ports for PWM, IN1, IN2 (STBY?) 
 uint8_t motor_init(uint8_t timer) {
 
     if (timer == TIMER0) {
@@ -32,9 +33,8 @@ uint8_t motor_init(uint8_t timer) {
 
         DDRD |= (1 << PWM_2) | (1 << IN1_2) | (1 << IN2_2);	// Outputs to driver
 
-        TCCR2B |= (1 << COM2B1);                   // clear on compare match, set at bottom
-        TCCR2B |= (1 << WGM22) | (1 << WGM21) | (1 << WGM20); // fast pwm, using OCR0A as TOP
-        TCCR2B |= (1 << CS22);       // 64 Prescaler
+        TCCR2A = (1<<COM2B1) | (1 << WGM22) | (1<<WGM21) | (1<<WGM20);
+        TCCR2B = (1<<CS22);
         OCR2B = 0;
         DDRD |= (1 << PWM_2);
 
@@ -45,20 +45,6 @@ uint8_t motor_init(uint8_t timer) {
     }
 
 }
-
-// Set ports for PWM, IN1, IN2 (STBY?) 
-/*void motor_init(void) {
-
-    DDRB |= (1 << PWM) | (1 << IN1) | (1 << IN2);	// Outputs to driver
-
-    TCCR1A |= (1 << WGM11); 					// fast pwm, using ICR1 as TOP
-    TCCR1B |= (1 << WGM12) | (1 << WGM13);
-    TCCR1B |= (1 << CS12); 		                // 256 prescale --> 2MHz clock
-    ICR1    = PWM_TIMER_MAX;  				    // TOP --> 1.6kHz PWM frequency
-    TCCR1A |= (1 << COM1A1); 					// clear on compare match, set at bottom
-    OCR1A   = 0;    							// set it to stopped, initially 
-    DDRB   |= (1 << PWM); 					    // set PB1/OC1A to output
-}*/
 
 // FWD, REV, BRAKE, STOP (STBY?) 
 uint8_t motor_mode(uint8_t mode, uint8_t timer) {
@@ -122,6 +108,14 @@ uint8_t motor_speed(uint16_t ADC_value, uint8_t timer){
     // Hold the pulse time
     uint16_t onTime = 0;
 
+    uint16_t PWM_timer_MAX = 0;
+
+    if (timer == TIMER0 || timer == TIMER2) {
+        PWM_timer_MAX = 256;
+    } else if (timer == TIMER1) {
+        PWM_timer_MAX = PWM_TIMER_MAX;
+    }
+
     // Control check for ADC_value
     if (ADC_value < 0 || ADC_value > 1024) {
         // Out of bounds
@@ -130,12 +124,12 @@ uint8_t motor_speed(uint16_t ADC_value, uint8_t timer){
     } else if (ADC_value < REV_LIMIT) {
         // Potentiometer is on the left side of the treshold
         motor_mode(REV, timer);                                                    // Motor movement REVERSE
-        onTime = (REV_LIMIT - (uint32_t)ADC_value) * PWM_TIMER_MAX / REV_LIMIT;       // Motor ON Time
+        onTime = (REV_LIMIT - (uint32_t)ADC_value) * PWM_timer_MAX / REV_LIMIT;       // Motor ON Time
         
     } else if (ADC_value > FWD_LIMIT) {
         // Potentiometer is on the right side of the treshold
         motor_mode(FWD, timer);                                                    // Motor movement FORWARD
-        onTime = ((uint32_t)ADC_value - FWD_LIMIT) * PWM_TIMER_MAX / FWD_LIMIT; // Motor ON Time
+        onTime = ((uint32_t)ADC_value - FWD_LIMIT) * PWM_timer_MAX / FWD_LIMIT; // Motor ON Time
 
     } else {
         // Potentiometer is on the treshold
@@ -143,14 +137,15 @@ uint8_t motor_speed(uint16_t ADC_value, uint8_t timer){
         onTime = 0;                                                         // Motor ON Time
     }
 
-    if (onTime>PWM_TIMER_MAX-1) 
-            onTime = PWM_TIMER_MAX-1;
-        else if (onTime < 0)
-            onTime = 0;		
+    if (onTime>PWM_TIMER_MAX-1) {
+        onTime = PWM_TIMER_MAX-1;
+    } else if (onTime < 0) {
+        onTime = 0;		
+    }
 
     if (timer == TIMER0) {
 
-        onTime = (CLOCK * onTime) / 64;                         // Prescale the ON Time
+        onTime = (CLOCK * onTime) / 256 * 15;                         // Prescale the ON Time
 	
         OCR0A = onTime;
 
@@ -162,7 +157,7 @@ uint8_t motor_speed(uint16_t ADC_value, uint8_t timer){
 
     } else if (timer == TIMER2) {
 
-        onTime = (CLOCK * onTime) / 64;                         // Prescale the ON Time
+        onTime = (CLOCK * onTime) / 256 * 15;                         // Prescale the ON Time
 	
         OCR2B = onTime;
 

@@ -27,6 +27,7 @@ int main(void) {
 	USART_Init();
 	SPIinit();	
 	motor_init(TIMER2);
+	motor_init(TIMER1);
 
 	//motor_mode(FWD, TIMER2);
 	
@@ -64,6 +65,7 @@ int main(void) {
 			printf("Motor1: %d\tMotor2: %d", motor1_value, motor2_value);
 
 			motor_speed(motor1_value,TIMER2);
+			motor_speed(motor2_value,TIMER1);
 
         }
         _delay_ms(500);
