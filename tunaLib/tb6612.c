@@ -33,9 +33,9 @@ uint8_t motor_init(uint8_t timer) {
 
         DDRD |= (1 << PWM_2) | (1 << IN1_2) | (1 << IN2_2);	// Outputs to driver
 
-        TCCR2A = (1<<COM2B1) | (1 << WGM22) | (1<<WGM21) | (1<<WGM20);
-        TCCR2B = (1<<CS22);
-        OCR2B = 0;
+        TCCR2A |= (1<<COM2B1) | (1 << WGM22) | (1<<WGM21) | (1<<WGM20);
+        TCCR2B |= (1<<CS22) | (1 << CS21) | (1 << CS20);
+        OCR2B |= 0;
         DDRD |= (1 << PWM_2);
 
         return 1;
