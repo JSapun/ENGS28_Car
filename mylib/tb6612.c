@@ -20,7 +20,7 @@ volatile uint8_t TB6612_AIN2;
 volatile uint8_t failsafe = 0;
 
 // Initialize Timer 1 for use with Pulse Width Modulation
-static void PWMtimer1_initA(void) {
+static void PWMtimer_init(void) {
  	TCCR1A |= (1 << WGM11); 				// fast pwm, using ICR1 as TOP
   	TCCR1B |= (1 << WGM12) | (1 << WGM13); 
 	TCCR1B |= (1 << CS11); 					// /8 prescale --> 2MHz clock
@@ -31,7 +31,7 @@ static void PWMtimer1_initA(void) {
 }
 
 // Set Timer 1 B for use with updating the Pulse Width on PORTB2
-static void PWMtimer1_setA(uint16_t value) {
+static void PWMtimer_set(uint16_t value) {
 // Safety first: Allow no pulse values outside the (0, PWM_TIMER_MAX-1 range!
 	if (value>PWM_TIMER_MAX-1) 
 		value = PWM_TIMER_MAX-1;
@@ -40,7 +40,7 @@ static void PWMtimer1_setA(uint16_t value) {
 	OCR1A = value;
 }
 
-static void PWMtimer1_initB(void) {
+static void PWMtimer2_init(void) {
  	TCCR1A |= (1 << WGM11); 				// fast pwm, using ICR1 as TOP
   	TCCR1B |= (1 << WGM12) | (1 << WGM13); 
 	TCCR1B |= (1 << CS11); 					// /8 prescale --> 2MHz clock
@@ -52,7 +52,7 @@ static void PWMtimer1_initB(void) {
 }
 
 // Set Timer 1 B for use with updating the Pulse Width on PORTB1
-static void PWMtimer1_setB(uint16_t value) {
+static void PWMtimer2_set(uint16_t value) {
 // Safety first: Allow no pulse values outside the (0, PWM_TIMER_MAX-1 range!
 	if (value>PWM_TIMER_MAX-1) 
 		value = PWM_TIMER_MAX-1;
@@ -64,12 +64,12 @@ static void PWMtimer1_setB(uint16_t value) {
 // Initialize the H-Bridge Chip for Motor (Set ports for PWMA, PWMB, IN1, IN2 (STBY?))
 void motor_init(void){	             
   	DDRB |= (1 << DDB1) | (1 << DDB2) | (1 << DDB3) | (1 << DDB4);	// Outputs to driver
-	PWMtimer1_initA(); 
-	PWMtimer1_initB();
+	PWMtimer1_init(); 
+	PWMtimer2_init();						
 
 	PORTB = (PORTB & ~((1 << PB3) | (1 << PB4))) | (0 << PB4) | (0 << PB3); 
-	PWMtimer1_setA(0);						// STOP mode
-	PWMtimer1_setB(0);						// STOP mode
+	PWMtimer1_set(0);						// STOP mode
+	PWMtimer2_set(0);						// STOP mode
 }
 
 void motor_mode(direction_t direction){           // FWD, REV, BRAKE, STOP (STBY?), and a failsafe for FWD⟷REV?
@@ -104,11 +104,11 @@ void motor_mode(direction_t direction){           // FWD, REV, BRAKE, STOP (STBY
 }
 
 // Set speed of motor (Interacts with Timer1)
-void motor_speedA(uint16_t pwm_mag){ 
-	PWMtimer1_setA(pwm_mag);		// Update the PWM A
+void motor_speed(uint16_t pwm_mag){ 
+	PWMtimer1_set(pwm_mag);		// Update the PWM A
 }
 
 // Set speed of motor (Interacts with Timer1)
-void motor_speedB(uint16_t pwm_mag){ 
-	PWMtimer1_setB(pwm_mag);		// Update the PWM B
+void motor_speed(uint16_t pwm_mag){ 
+	PWMtimer2_set(pwm_mag);		// Update the PWM B
 }
