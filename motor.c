@@ -97,13 +97,13 @@ int main(void) {
 				printf("\t--> brake\n\r");
 			}
 			else {
-				SevenSeg_dim(4);
+				SevenSeg_dim(1);
 				printf("\t--> here\n\r");
 			}			
 			prev_speed = motor1_value;
 
 
-			printf("Dir: %d\t Speed: %d\t Motor1: %d\t Motor2: %d\n\r", direction, speed, motor1_value, motor2_value);
+			//printf("Dir: %d\t Speed: %d\t Motor1: %d\t Motor2: %d\n\r", direction, speed, motor1_value, motor2_value);
 
 			onTime1 = 0;
 			onTime2 = 0;
