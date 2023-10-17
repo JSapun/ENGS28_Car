@@ -5,11 +5,11 @@
 
 # MAIN is the name of the top-level program in your project (without the .c extension)
 
-MAIN = receive
+MAIN = transmit
 
 # LIBDIR is the path to the folder (relative to your project folder) that contains 
 # additional libraries that your project may use.
-LIBDIR      = ./mylib/
+LIBDIR      = ../mylib/
 
 # LIBRARIES are the libraries in your LIBDIR folder that the current project uses
 LIBRARIES = ioE28 USARTE28 nrf24l01 i2c lsm303agr ADC tb6612_T1 SevenSeg

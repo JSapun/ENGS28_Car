@@ -1,4 +1,11 @@
-#include "tb6612_T0.h"
+/* 
+ * SevenSeg.c
+ * Justin Sapun 
+ * Device driver module for the tb6612 h-bridge motor controller.
+ * This driver enables dual motor control.
+ */
+
+#include "tb6612_T1.h"
 
 static uint8_t motor1_init() { // Timer 1 Compare A
 
@@ -15,22 +22,21 @@ static uint8_t motor1_init() { // Timer 1 Compare A
 
 static uint8_t motor2_init() { // Timer 2 Compare B
 
-    TCCR2A |= (1<<COM2B1) | (1 << WGM22) | (1<<WGM21) | (1<<WGM20);
-    TCCR2B |= (1<<CS22) | (1 << CS21) | (1 << CS20);
-    OCR2B |= 0;
-    DDRD |= (1 << DDD3);
+	TCCR1A |= (1 << COM1B1); 				// clear on compare match, set at bottom
+	OCR1B   = 0;    						// set it to stopped, initially 
+	DDRB   |= (1 << DDB2); 					// set PB2/OC1B to output
 
     return 1;
 }
 
 uint8_t motors_init(){
 
-    DDRD |= (1 << DDD2) | (1 << DDD3) | (1 << DDD4);	// Outputs to driver
-    DDRB |= (1 << DDB1);
+    DDRD |= (1 << AIN1) | (1 << AIN2);	// Outputs to driver
+    DDRB |= (1 << DDB1) | (1 << DDB2);
     motor1_init(); 
 	motor2_init();
 
-    PORTD = (PORTD & ~((1 << PD4) | (1 << PD2))) | (0 << PD2) | (0 << PD4); // Stop Mode
+    PORTD = (PORTD & ~((1 << AIN2) | (1 << AIN1))) | (0 << AIN1) | (0 << AIN2); // Stop Mode
 	motor1_speed(0);						                                // STOP mode
 	motor2_speed(0);						                                // STOP mode
 
@@ -46,15 +52,15 @@ uint8_t motors_mode(uint8_t direction) {
     switch(direction) {
 		case FWD:
 			if (failsafe != 2){		// FAILSAFE, will pass if braked previously
-				TB6612_AIN1 = 1;
-				TB6612_AIN2 = 0;	// CW
+				TB6612_AIN1 = 0;
+				TB6612_AIN2 = 1;	// CW
 				failsafe = 1;
 			}
 			break;
 		case REV:
 			if (failsafe != 1){
-				TB6612_AIN1 = 0;
-				TB6612_AIN2 = 1;	// CCW
+				TB6612_AIN1 = 1;
+				TB6612_AIN2 = 0;	// CCW
 				failsafe = 2;
 			}
 			break;
@@ -73,34 +79,30 @@ uint8_t motors_mode(uint8_t direction) {
             return 0;
             break;
 	}
-	PORTD = (PORTD & ~((1 << PD4) | (1 << PD2))) | (TB6612_AIN2 << PD2) | (TB6612_AIN1 << PD4); // Clear and set Bits
+	PORTD = (PORTD & ~((1 << AIN2) | (1 << AIN1))) | (TB6612_AIN2 << AIN1) | (TB6612_AIN1 << AIN2); // Clear and set Bits
     return 1;
 }
 
 // Set motor speed (PWM) for Timer 1 Compare A
 uint8_t motor1_speed(uint16_t value) {
 
-    if (value>PWM_TIMER1_MAX-1) 
+    if (value > PWM_TIMER1_MAX-1) 
 		value = PWM_TIMER1_MAX-1;
 	else if (value < 0)
 		value = 0;		
-
-    value = (CLOCK * value) / 256 * 15;                         // Prescale the ON Time
 	OCR1A = value;
 
     return 1;
 }
 
-// Set motor speed (PWM) for Timer 2 Compare B
+// Set motor speed (PWM) for Timer 1 Compare B
 uint8_t motor2_speed(uint16_t value) {
 
-    if (value>PWM_TIMER2_MAX-1) 
-		value = PWM_TIMER2_MAX-1;
+    if (value > PWM_TIMER1_MAX-1) 
+		value = PWM_TIMER1_MAX-1;
 	else if (value < 0)
 		value = 0;		
-
-    value = (CLOCK * value) / 256 * 15;                         // Prescale the ON Time
-	OCR2B = value;
+	OCR1B = value;
 
     return 1;
 }
